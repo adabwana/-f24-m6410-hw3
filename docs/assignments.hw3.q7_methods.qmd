@@ -1,0 +1,374 @@
+
+---
+format:
+  html: {toc: true, toc-depth: 3, theme: cosmo, number-sections: false, output-file: assignments.hw3.q7_methods.html}
+code-block-background: true
+include-in-header: {text: '<link rel = "icon" href = "data:," />'}
+toc-title-numbers: false
+number-depth: 0
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="assignments.hw3.q7_methods_files/md-default0.js" type="text/javascript"></script><script src="assignments.hw3.q7_methods_files/md-default1.js" type="text/javascript"></script>
+
+::: {.sourceClojure}
+```clojure
+(ns assignments.hw3.q7-methods
+  (:require
+   [assignments.hw3.utils :refer :all]
+   [scicloj.hanamicloth.v1.api :as haclo]
+   [tablecloth.api :as tc]))
+```
+:::
+
+
+## Q7: Two Methods
+---
+
+
+**Problem Statement:**
+
+Assume that the AI system of an electric car emits 9 errors in a trip of 3,000 miles. The errors are randomly distributed to 7 back-up circuits where one circuit may handle more than one error. If all back-up circuits receive at least one error in one trip, a warning light turns on. Find the probability that the warning light turns on during a trip of 3,000 miles.
+
+We'll solve this using two methods:
+     
+1. Using Stirling numbers of the second kind (combinatorial approach)
+2. Using the Inclusion-Exclusion Principle (analytical approach)
+
+Let's start with a smaller example to illustrate the concepts: 4 errors distributed to 3 circuits.
+
+### Method 1: Using Stirling Numbers of the Second Kind
+
+
+This method uses Stirling numbers of the second kind, $S(n,k)$, which count the ways to partition $n$ distinguishable objects into $k$ non-empty subsets.
+
+Key function: `stirling2`
+
+Stirling numbers of the second kind
+
+
+::: {.sourceClojure}
+```clojure
+(comment
+  (defn stirling2 [n k]
+    (cond
+      (or (= k 0) (> k n)) 0
+      (or (= k 1) (= k n)) 1
+      :else (+ (* k (stirling2 (dec n) k))
+               (stirling2 (dec n) (dec k))))))
+```
+:::
+
+
+
+For our example (4 errors, 3 circuits):
+     
+- Total ways: $3^4 = 81$
+- Favorable ways: $3! \times S(4,3)$
+- Probability: $\frac{3! \times S(4,3)}{3^4}$
+
+Probability calculation using Method 1
+
+
+::: {.sourceClojure}
+```clojure
+(defn probability-method1 [n k]
+  (let [total-ways (Math/pow k n)
+        favorable-ways (* (factorial k) (stirling2 n k))]
+    (/ favorable-ways total-ways)))
+```
+:::
+
+
+Probability for our example:
+
+
+::: {.sourceClojure}
+```clojure
+(format "%.4f" (probability-method1 4 3))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+"0.4444"
+
+```
+:::
+
+
+### Method 2: Using the Inclusion-Exclusion Principle
+
+
+This method systematically includes and excludes overlapping cases.
+
+Key function: `inclusion-exclusion-terms`
+
+Inclusion-Exclusion terms
+
+
+::: {.sourceClojure}
+```clojure
+(defn inclusion-exclusion-terms-0dex [n k]
+  (map (fn [i]
+         (let [sign (if (even? i) 1 -1)
+               combinations (nck k i)
+               ways (Math/pow (- k i) n)]
+           (* sign combinations ways)))
+       (range 0 (inc k))))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(defn inclusion-exclusion-terms-1dex
+  "Calculates the terms for the inclusion-exclusion principle, corresponding to the formula:
+   
+   n: Number of items to distribute (e.g., calls)
+   k: Number of groups to distribute into (e.g., days)
+   
+   Returns a sequence of terms for the inclusion-exclusion sum."
+  [n k]
+  (map (fn [i]
+         (let [sign (if (odd? i) 1 -1)
+               combinations (nck k i)  
+               ways (Math/pow (- k i) n)]  
+           (* sign combinations ways)))
+       (range 1 (inc k))))
+```
+:::
+
+
+
+For our example (4 errors, 3 circuits):
+
+Compute inclusion-exclusion terms for the example
+
+
+::: {.sourceClojure}
+```clojure
+(def terms-example-0dex
+  (map-indexed
+   (fn [i term]
+     {:i i
+      :sign (if (even? i) "+" "-")
+      :combination (nck 3 i)
+      :ways (Math/pow (- 3 i) 4)
+      :term term})
+   (inclusion-exclusion-terms-0dex 4 3)))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def terms-example-1dex
+  (map-indexed
+   (fn [i term]
+     {:i (inc i)
+      :sign (if (odd? (inc i)) "+" "-")
+      :combination (nck 3 (inc i))
+      :ways (Math/pow (- 3 (inc i)) 4)
+      :term term})
+   (inclusion-exclusion-terms-1dex 4 3)))
+```
+:::
+
+
+Print the inclusion-exclusion terms table
+
+
+::: {.sourceClojure}
+```clojure
+(into [] terms-example-0dex)
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+[{:i 0, :sign "+", :combination 1N, :ways 81.0, :term 81.0}
+ {:i 1, :sign "-", :combination 3N, :ways 16.0, :term -48.0}
+ {:i 2, :sign "+", :combination 3N, :ways 1.0, :term 3.0}
+ {:i 3, :sign "-", :combination 1N, :ways 0.0, :term -0.0}]
+
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(into [] terms-example-1dex)
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+[{:i 1, :sign "+", :combination 3N, :ways 16.0, :term 48.0}
+ {:i 2, :sign "-", :combination 3N, :ways 1.0, :term -3.0}
+ {:i 3, :sign "+", :combination 1N, :ways 0.0, :term 0.0}]
+
+```
+:::
+
+
+
+**Explanation:**
+     
+- i: Number of circuits excluded
+- sign: Alternates between + and - based on the inclusion-exclusion principle
+- combination: Ways to choose i circuits to exclude
+- ways: Ways to distribute errors into remaining circuits
+- term: Calculated as sign × combination × ways
+
+The sum of these terms gives us the favorable ways.
+
+Probability calculation using Method 2
+
+
+::: {.sourceClojure}
+```clojure
+(defn probability-method2 [n k]
+  (let [total-ways (Math/pow k n)
+        favorable-ways (reduce + (inclusion-exclusion-terms-0dex n k))
+        probs (/ favorable-ways total-ways)]
+    probs))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(let [n 4 k 3 
+      total-ways (Math/pow k n)
+      favorable-ways (reduce + (inclusion-exclusion-terms-0dex n k))
+      probs (/ favorable-ways total-ways)]
+  (answer
+   (str "Probability: " (format "%.4f" probs))))
+```
+:::
+
+
+> <span style="color: black; font-size: 1.5em;">**Probability: 0.4444**</span>
+
+
+::: {.sourceClojure}
+```clojure
+(let [n 4 k 3 
+      total-ways (Math/pow k n)
+      favorable-ways (reduce + (inclusion-exclusion-terms-1dex n k))
+      probs (/ favorable-ways total-ways)
+      not-probs (- 1 probs)]
+  (answer
+   (str "Probability: " (format "%.4f" not-probs))))
+```
+:::
+
+
+> <span style="color: black; font-size: 1.5em;">**Probability: 0.4444**</span>
+
+### Comparing Methods for Different Values of n
+
+
+::: {.sourceClojure}
+```clojure
+(def n-values (range 1 20))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def k 8)
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def probabilities
+  (map (fn [n]
+         {:n n
+          :method1 (double (probability-method1 n k))
+          :method2 (double (probability-method2 n k))})
+       n-values))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def data (tc/dataset probabilities))
+```
+:::
+
+
+Plotting the probabilities
+
+
+### Conclusion
+
+Both methods yield the same results, but they offer different perspectives:
+
+1. **Stirling Numbers (Method 1):** 
+   - Focuses on partitioning errors into non-empty circuits
+   - More intuitive for understanding the problem structure
+   - Computationally efficient for smaller values
+
+2. **Inclusion-Exclusion (Method 2):**
+   - Systematically accounts for all possible cases
+   - More generalizable to complex scenarios
+   - Can be computationally intensive for large values
+
+For our original problem (10 errors, 8 circuits):
+
+
+::: {.sourceClojure}
+```clojure
+(format "Probability: %.5f" (probability-method1 9 7))
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+"Probability: 0.05770"
+
+```
+:::
+
+
+
+This low probability suggests it's unlikely for all circuits to receive an error in a single trip, which is generally good for system reliability. However, in critical systems like automotive AI, even low-probability events need careful consideration.
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: <a href="https://github.com/adabwana/f24-m6410-hw3/blob/master/src/assignments/hw3/q7_methods.clj">src/assignments/hw3/q7_methods.clj</a></small></small></pre></div>
+```

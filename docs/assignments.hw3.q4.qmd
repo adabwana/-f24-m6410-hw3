@@ -1,0 +1,370 @@
+
+---
+format:
+  html: {toc: true, toc-depth: 3, theme: cosmo, number-sections: false, output-file: assignments.hw3.q4.html}
+code-block-background: true
+include-in-header: {text: '<link rel = "icon" href = "data:," />'}
+toc-title-numbers: false
+number-depth: 0
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="assignments.hw3.q4_files/md-default2.js" type="text/javascript"></script><script src="assignments.hw3.q4_files/md-default3.js" type="text/javascript"></script><script src="assignments.hw3.q4_files/katex4.js" type="text/javascript"></script><script src="assignments.hw3.q4_files/vega5.js" type="text/javascript"></script><script src="assignments.hw3.q4_files/vega6.js" type="text/javascript"></script><script src="assignments.hw3.q4_files/vega7.js" type="text/javascript"></script><link href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" rel="stylesheet" type="text/css" />
+
+::: {.sourceClojure}
+```clojure
+(ns assignments.hw3.q4
+   (:require
+    [assignments.hw3.utils :refer :all]
+    [tablecloth.api :as tc]
+    [scicloj.hanamicloth.v1.api :as haclo]))
+```
+:::
+
+
+## Question 4
+---
+
+#### *4) Two players, A and B, alternately and independently flip a coin and the first player to obtain a head wins. Assume player A flips first.*
+
+***a) If the coin is fair, what is the probability that A wins?***
+
+To solve this problem, let's consider the possible scenarios:
+
+1. A wins on the first flip (probability 1/2)
+2. If A doesn't win on the first flip, B flips. If B doesn't win, we're back to A's turn, but now in the same situation as at the start of the game.
+
+Let p be the probability that A wins. We can write an equation:
+
+$$p = \frac{1}{2} + \frac{1}{2} \cdot \frac{1}{2} \cdot p$$
+
+This equation states that A wins either on the first flip (1/2) or if both A and B get tails (1/2 * 1/2), bringing us back to the original situation (p).
+
+Solving this equation:
+
+$$p = \frac{1}{2} + \frac{1}{4}p$$
+
+$$\frac{3}{4}p = \frac{1}{2}$$
+
+$$p = \frac{2}{3}$$
+
+
+::: {.sourceClojure}
+```clojure
+(def probability-a-wins
+   (fn [p]
+     (/ p (- 1 (* (- 1 p) (- 1 p))))))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def probability-a-wins-fair
+   (probability-a-wins 0.5))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(answer
+  (str "The probability that A wins with a fair coin is "
+       (format "%.5f" probability-a-wins-fair)))
+```
+:::
+
+
+> <span style="color: black; font-size: 1.5em;">**The probability that A wins with a fair coin is 0.66667**</span>
+
+We can verify this result by simulating many games:
+
+
+::: {.sourceClojure}
+```clojure
+(comment
+   (defn simulate-game []
+     (loop [player :A]
+       (if (= (rand-int 2) 0)                          ; 0 represents heads
+         player
+         (recur (if (= player :A) :B :A))))))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(comment
+   (defn simulate-many-games [n]
+     (let [results (repeatedly n simulate-game)
+           a-wins (count (filter #(= % :A) results))]
+       (double (/ a-wins n)))))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(let [num-simulations 1000000
+       simulated-prob (simulate-many-games num-simulations)]
+   (answer
+    (str "Simulated probability after " num-simulations " games: " (format "%.4f" simulated-prob))))
+```
+:::
+
+
+> <span style="color: black; font-size: 1.5em;">**Simulated probability after 1000000 games: 0.6673**</span>
+
+***b) Suppose that P(head) = p, not necessarily 1/2. What is the probability that A wins?***
+
+Let's use the same approach as in part (a), but now with a general probability p for heads.
+
+Let q be the probability that A wins. We can write an equation:
+
+$$q = p + (1-p)(1-p)q$$
+
+This equation states that A wins either on the first flip (p) or if both A and B get tails ((1-p)(1-p)), bringing us back to the original situation (q).
+
+Solving this equation:
+
+$$q = p + (1-p)^2q$$
+
+$$q - (1-p)^2q = p$$
+
+$$q(1 - (1-p)^2) = p$$
+
+$$q = \frac{p}{1 - (1-p)^2}$$
+
+$$q = \frac{p}{2p - p^2}$$
+
+$$q = \frac{1}{2 - p}$$
+
+Let's calculate this probability for a few values of p:
+
+
+::: {.sourceClojure}
+```clojure
+(def probabilities
+   (map (fn [p] {:p p :probability (probability-a-wins p)})
+        [0.1 0.3 0.5 0.7 0.9]))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(into [] probabilities)
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+[{:p 0.1, :probability 0.5263157894736844}
+ {:p 0.3, :probability 0.5882352941176471}
+ {:p 0.5, :probability 0.6666666666666666}
+ {:p 0.7, :probability 0.7692307692307693}
+ {:p 0.9, :probability 0.9090909090909092}]
+
+```
+:::
+
+
+**Interpretation:**
+
+1. When p = 0.5 (fair coin), we get the same result as in part (a): 2/3.
+2. As p increases, A's probability of winning increases, which makes sense as A gets the first chance to flip.
+3. As p approaches 1, A's probability of winning approaches 1, as A would almost certainly win on the first flip.
+4. As p approaches 0, A's probability of winning approaches 1/2, as the game would likely go on for many flips, slightly favoring A who goes first.
+
+
+::: {.sourceClojure}
+```clojure
+(answer "The probability that A wins when P(head) = p is 1 / (2 - p)")
+```
+:::
+
+
+> <span style="color: black; font-size: 1.5em;">**The probability that A wins when P(head) = p is 1 / (2 - p)**</span>
+
+**Simulation Verification for Part b:**
+
+Let's create a simulation to verify our formula for different values of p:
+
+
+::: {.sourceClojure}
+```clojure
+(defn simulate-game-b [p]
+   (loop [player :A]
+     (if (< (rand) p)
+       player
+       (recur (if (= player :A) :B :A)))))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(defn simulate-many-games-b [n p]
+   (let [results (repeatedly n #(simulate-game-b p))
+         a-wins (count (filter #(= % :A) results))]
+     (double (/ a-wins n))))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(def simulation-results
+   (for [p [0.1 0.3 0.5 0.7 0.9]]
+     (let [theoretical (probability-a-wins p)
+           simulated (simulate-many-games-b 1000000 p)]
+       {:p p
+        :theoretical theoretical
+        :simulated simulated
+        :difference (- theoretical simulated)})))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(answer "Simulation results comparing theoretical and simulated probabilities:")
+```
+:::
+
+
+> <span style="color: black; font-size: 1.5em;">**Simulation results comparing theoretical and simulated probabilities:**</span>
+
+
+::: {.sourceClojure}
+```clojure
+(into [] simulation-results)
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+[{:p 0.1,
+  :theoretical 0.5263157894736844,
+  :simulated 0.526619,
+  :difference -3.032105263155449E-4}
+ {:p 0.3,
+  :theoretical 0.5882352941176471,
+  :simulated 0.587536,
+  :difference 6.992941176471312E-4}
+ {:p 0.5,
+  :theoretical 0.6666666666666666,
+  :simulated 0.666558,
+  :difference 1.0866666666664582E-4}
+ {:p 0.7,
+  :theoretical 0.7692307692307693,
+  :simulated 0.76968,
+  :difference -4.4923076923075733E-4}
+ {:p 0.9,
+  :theoretical 0.9090909090909092,
+  :simulated 0.909293,
+  :difference -2.0209090909084626E-4}]
+
+```
+:::
+
+
+**Conclusion:**
+
+We have derived, implemented, and verified formulas for the probability of player A winning in a coin-flipping game against player B, both for a fair coin and for a coin with an arbitrary probability of heads. The simulation results closely match our theoretical calculations, confirming the accuracy of our formula.
+
+This problem demonstrates the application of probability in game theory and illustrates how initial advantages (going first) can affect the overall probability of winning in sequential games. It also showcases how simulations can be used to verify theoretical results in probability problems.
+
+Add the following code for plotting
+
+
+::: {.sourceClojure}
+```clojure
+(def simulation-data
+   (tc/dataset
+    (concat
+     (map #(assoc % :type "Theoretical" :probability (:theoretical %)) simulation-results)
+     (map #(assoc % :type "Simulated" :probability (:simulated %)) simulation-results))))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(-> simulation-data
+     (haclo/layer-line
+      {:=x :p :=x-title "P(Head)" :=title "Probability of A Winning"
+       :=y :probability :=y-title "Probability of A Winning"
+       :=color :type})
+     (haclo/layer-point
+      {:=x :p       :=y :probability :=color :type}))
+```
+:::
+
+
+
+```{=html}
+<div><script>vegaEmbed(document.currentScript.parentElement, {"encoding":{"x":{"field":"x","type":"nominal"},"y":{"field":"y","type":"nominal"}},"usermeta":{"embedOptions":{"renderer":"svg"}},"width":400,"background":"floralwhite","layer":[{"mark":{"type":"line","tooltip":true},"encoding":{"color":{"field":"type","type":"nominal"},"x":{"field":"p","type":"quantitative","title":"P(Head)"},"y":{"field":"probability","type":"quantitative","title":"Probability of A Winning"}},"data":{"values":"p,theoretical,simulated,difference,type,probability\n0.1,0.5263157894736844,0.526619,-3.032105263155449E-4,Theoretical,0.5263157894736844\n0.3,0.5882352941176471,0.587536,6.992941176471312E-4,Theoretical,0.5882352941176471\n0.5,0.6666666666666666,0.666558,1.0866666666664582E-4,Theoretical,0.6666666666666666\n0.7,0.7692307692307693,0.76968,-4.4923076923075733E-4,Theoretical,0.7692307692307693\n0.9,0.9090909090909092,0.909293,-2.0209090909084626E-4,Theoretical,0.9090909090909092\n0.1,0.5263157894736844,0.526619,-3.032105263155449E-4,Simulated,0.526619\n0.3,0.5882352941176471,0.587536,6.992941176471312E-4,Simulated,0.587536\n0.5,0.6666666666666666,0.666558,1.0866666666664582E-4,Simulated,0.666558\n0.7,0.7692307692307693,0.76968,-4.4923076923075733E-4,Simulated,0.76968\n0.9,0.9090909090909092,0.909293,-2.0209090909084626E-4,Simulated,0.909293\n","format":{"type":"csv"}}},{"mark":{"type":"circle","tooltip":true},"encoding":{"color":{"field":"type","type":"nominal"},"x":{"field":"p","type":"quantitative"},"y":{"field":"probability","type":"quantitative"}},"data":{"values":"p,theoretical,simulated,difference,type,probability\n0.1,0.5263157894736844,0.526619,-3.032105263155449E-4,Theoretical,0.5263157894736844\n0.3,0.5882352941176471,0.587536,6.992941176471312E-4,Theoretical,0.5882352941176471\n0.5,0.6666666666666666,0.666558,1.0866666666664582E-4,Theoretical,0.6666666666666666\n0.7,0.7692307692307693,0.76968,-4.4923076923075733E-4,Theoretical,0.7692307692307693\n0.9,0.9090909090909092,0.909293,-2.0209090909084626E-4,Theoretical,0.9090909090909092\n0.1,0.5263157894736844,0.526619,-3.032105263155449E-4,Simulated,0.526619\n0.3,0.5882352941176471,0.587536,6.992941176471312E-4,Simulated,0.587536\n0.5,0.6666666666666666,0.666558,1.0866666666664582E-4,Simulated,0.666558\n0.7,0.7692307692307693,0.76968,-4.4923076923075733E-4,Simulated,0.76968\n0.9,0.9090909090909092,0.909293,-2.0209090909084626E-4,Simulated,0.909293\n","format":{"type":"csv"}}}],"height":300,"data":{"url":"assignments.hw3.q4_files\/0.csv","format":{"type":"csv"}}});</script></div>
+```
+
+
+The plot above shows the theoretical probability (line) and simulated results (points) for different values of P(Head). As we can see, the simulated results closely follow the theoretical curve, confirming the accuracy of our formula and simulation.
+
+
+::: {.sourceClojure}
+```clojure
+(def difference-data
+  (tc/dataset simulation-results))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(-> difference-data
+     (haclo/layer-line
+      {:=x :p :=x-title "P(Head)" :=title "Difference between Theoretical and Simulated Probabilities"
+       :=y :difference :=y-title "Theoretical - Simulated"}))
+```
+:::
+
+
+
+```{=html}
+<div><script>vegaEmbed(document.currentScript.parentElement, {"encoding":{"x":{"field":"x","type":"nominal"},"y":{"field":"y","type":"nominal"}},"usermeta":{"embedOptions":{"renderer":"svg"}},"width":400,"background":"floralwhite","layer":[{"mark":{"type":"line","tooltip":true},"encoding":{"x":{"field":"p","type":"quantitative","title":"P(Head)"},"y":{"field":"difference","type":"quantitative","title":"Theoretical - Simulated"}},"data":{"values":"p,theoretical,simulated,difference\n0.1,0.5263157894736844,0.526619,-3.032105263155449E-4\n0.3,0.5882352941176471,0.587536,6.992941176471312E-4\n0.5,0.6666666666666666,0.666558,1.0866666666664582E-4\n0.7,0.7692307692307693,0.76968,-4.4923076923075733E-4\n0.9,0.9090909090909092,0.909293,-2.0209090909084626E-4\n","format":{"type":"csv"}}}],"height":300,"data":{"url":"assignments.hw3.q4_files\/1.csv","format":{"type":"csv"}}});</script></div>
+```
+
+
+This second plot shows the difference between the theoretical and simulated probabilities. The closer the line is to zero, the better the simulation matches the theoretical prediction. As we can see, the differences are very small, typically within ±0.005, which indicates a good agreement between theory and simulation.
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: <a href="https://github.com/adabwana/f24-m6410-hw3/blob/master/src/assignments/hw3/q4.clj">src/assignments/hw3/q4.clj</a></small></small></pre></div>
+```

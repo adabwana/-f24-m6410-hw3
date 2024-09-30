@@ -1,0 +1,177 @@
+
+---
+format:
+  html: {toc: true, toc-depth: 3, theme: cosmo, number-sections: false, output-file: assignments.hw3.q3.html}
+code-block-background: true
+include-in-header: {text: '<link rel = "icon" href = "data:," />'}
+toc-title-numbers: false
+number-depth: 0
+
+---
+<style></style><style>.printedClojure .sourceCode {
+  background-color: transparent;
+  border-style: none;
+}
+</style><style>.clay-limit-image-width .clay-image {max-width: 100%}
+.clay-side-by-side .sourceCode {margin: 0}
+.clay-side-by-side {margin: 1em 0}
+</style>
+<script src="assignments.hw3.q3_files/md-default1.js" type="text/javascript"></script><script src="assignments.hw3.q3_files/md-default2.js" type="text/javascript"></script><script src="assignments.hw3.q3_files/vega3.js" type="text/javascript"></script><script src="assignments.hw3.q3_files/vega4.js" type="text/javascript"></script><script src="assignments.hw3.q3_files/vega5.js" type="text/javascript"></script>
+
+::: {.sourceClojure}
+```clojure
+(ns assignments.hw3.q3
+  (:require
+   [assignments.hw3.utils :refer :all]
+   [fastmath.core :as m]
+   [scicloj.hanamicloth.v1.api :as haclo]
+   [tablecloth.api :as tc]))
+```
+:::
+
+
+## Question 3
+---
+
+#### *3) If $n$ balls are placed at random into $n$ cells, find the probability that exactly one cell remains empty.*
+
+**Solution:**
+     
+To solve this problem, we'll use the following approach:
+     
+1. Calculate the total number of ways to place n balls into n cells.
+2. Calculate the number of ways to place n balls into n cells with exactly one cell empty.
+3. Divide the result from step 2 by the result from step 1 to get the probability.
+
+**Step 1: Total number of ways**
+     
+Total ways = $n^n$
+     
+**Step 2: Number of ways with exactly one cell empty**
+     
+We can calculate this using the following steps:
+
+a) Choose 1 cell to be empty: $\binom{n}{1} = n$ ways
+b) Distribute $n-1$ balls among $n-1$ cells: $(n-1)^{n-1}$ ways
+c) Multiply these together: $n \cdot (n-1)^{n-1}$ ways
+
+**Step 3: Calculate the probability**
+     
+P(exactly one cell empty) = $\frac{n \cdot (n-1)^{n-1}}{n^n}$
+
+
+::: {.sourceClojure}
+```clojure
+(comment
+  (defn probability-one-cell-empty [n]
+    (/ (* n (m/pow (dec n) (dec n)))
+       (m/pow n n))))
+```
+:::
+
+
+Let's calculate this probability for a few values of n:
+
+
+::: {.sourceClojure}
+```clojure
+(def probabilities
+  (map (fn [n] {:n n :probability (probability-one-cell-empty n)})
+       (range 2 11)))
+```
+:::
+
+
+
+::: {.sourceClojure}
+```clojure
+(into [] probabilities)
+```
+:::
+
+
+
+::: {.printedClojure}
+```clojure
+[{:n 2, :probability 0.5}
+ {:n 3, :probability 0.4444444444444444}
+ {:n 4, :probability 0.421875}
+ {:n 5, :probability 0.4096}
+ {:n 6, :probability 0.4018775720164609}
+ {:n 7, :probability 0.39656945660396603}
+ {:n 8, :probability 0.39269590377807617}
+ {:n 9, :probability 0.38974434312894585}
+ {:n 10, :probability 0.387420489}]
+
+```
+:::
+
+
+**Interpretation:**
+     
+1. As $n$ increases, the probability of having exactly one cell empty decreases.
+2. This makes sense intuitively: with more balls and cells, it becomes less likely to have exactly one cell empty.
+3. For large $n$, this probability approaches $\frac{1}{e} \approx 0.3679$, which is a well-known result in probability theory.
+
+**Verification:**
+     
+We can verify that our formula approaches $\frac{1}{e}$ for large n:
+
+
+::: {.sourceClojure}
+```clojure
+(let [vals (range 1 50)
+      probs (map probability-one-cell-empty vals)
+      data (tc/dataset {:ns    vals
+                        :probs probs})]
+  (-> data
+      (haclo/layer-line
+       {:=x :ns :=x-title "n" :=mark-size 7
+        :=y :probs :=y-title "P(exactly one cell empty)"})
+      (haclo/update-data (fn [_]
+                           (tc/dataset
+                            {:ns    (range 1 50)
+                             :e-inv (repeat 50 (/ 1 Math/E))})))
+      (haclo/layer-line
+       {:=x :ns :=y :e-inv :=mark-color :red})))
+```
+:::
+
+
+
+```{=html}
+<div><script>vegaEmbed(document.currentScript.parentElement, {"encoding":{"x":{"field":"x","type":"nominal"},"y":{"field":"y","type":"nominal"}},"usermeta":{"embedOptions":{"renderer":"svg"}},"width":400,"background":"floralwhite","layer":[{"mark":{"type":"line","size":7,"tooltip":true},"encoding":{"x":{"field":"ns","type":"quantitative","title":"n"},"y":{"field":"probs","type":"quantitative","title":"P(exactly one cell empty)"}},"data":{"values":"ns,probs\n1,1.0\n2,0.5\n3,0.4444444444444444\n4,0.421875\n5,0.4096\n6,0.4018775720164609\n7,0.39656945660396603\n8,0.39269590377807617\n9,0.38974434312894585\n10,0.387420489\n11,0.38554328942953175\n12,0.3839952305608768\n13,0.3826967066770906\n14,0.3815918725444634\n15,0.3806403926722973\n16,0.37981240581524567\n17,0.3790853319179361\n18,0.37844178013552615\n19,0.3778681389925449\n20,0.3773536025353076\n21,0.3768894828730007\n22,0.3764687154334921\n23,0.37608549671560276\n24,0.37573501490663197\n25,0.37541324672710236\n26,0.3751168022539642\n27,0.3748428050028718\n28,0.3745887982633918\n29,0.3743526712176019\n30,0.37413260013270055\n31,0.3739270011573595\n32,0.3737344921355526\n33,0.3735538614900617\n34,0.3733840426943214\n35,0.37322409319569144\n36,0.37307317691013153\n37,0.372930549601623\n38,0.37279554660653674\n39,0.3726675724755776\n40,0.37254609219269813\n41,0.3724306236978051\n42,0.3723207314928614\n43,0.3722160211525604\n44,0.37211613459370735\n45,0.37202074598371687\n46,0.3719295581897092\n47,0.3718422996866633\n48,0.3717587218568528\n49,0.3716785966239821\n","format":{"type":"csv"}}},{"mark":{"type":"line","color":"red","tooltip":true},"encoding":{"x":{"field":"ns","type":"quantitative"},"y":{"field":"e-inv","type":"quantitative"}},"data":{"values":"ns,e-inv\n1,0.36787944117144233\n2,0.36787944117144233\n3,0.36787944117144233\n4,0.36787944117144233\n5,0.36787944117144233\n6,0.36787944117144233\n7,0.36787944117144233\n8,0.36787944117144233\n9,0.36787944117144233\n10,0.36787944117144233\n11,0.36787944117144233\n12,0.36787944117144233\n13,0.36787944117144233\n14,0.36787944117144233\n15,0.36787944117144233\n16,0.36787944117144233\n17,0.36787944117144233\n18,0.36787944117144233\n19,0.36787944117144233\n20,0.36787944117144233\n21,0.36787944117144233\n22,0.36787944117144233\n23,0.36787944117144233\n24,0.36787944117144233\n25,0.36787944117144233\n26,0.36787944117144233\n27,0.36787944117144233\n28,0.36787944117144233\n29,0.36787944117144233\n30,0.36787944117144233\n31,0.36787944117144233\n32,0.36787944117144233\n33,0.36787944117144233\n34,0.36787944117144233\n35,0.36787944117144233\n36,0.36787944117144233\n37,0.36787944117144233\n38,0.36787944117144233\n39,0.36787944117144233\n40,0.36787944117144233\n41,0.36787944117144233\n42,0.36787944117144233\n43,0.36787944117144233\n44,0.36787944117144233\n45,0.36787944117144233\n46,0.36787944117144233\n47,0.36787944117144233\n48,0.36787944117144233\n49,0.36787944117144233\n","format":{"type":"csv"}}}],"height":300,"data":{"url":"assignments.hw3.q3_files\/0.csv","format":{"type":"csv"}}});</script></div>
+```
+
+
+
+::: {.sourceClojure}
+```clojure
+(let [large-n 143 ;last value before NaN--n^n overflows
+      prob (probability-one-cell-empty large-n)
+      e-inverse (/ 1 Math/E)]
+  (answer (str "For n = " large-n ": \t\t
+                Calculated probability: " (format "%.5f" prob) "\t\t
+                $1/e$: " (format "%.5f" e-inverse))))
+```
+:::
+
+
+> <span style="color: black; font-size: 1.5em;">**For n = 143: 		
+                Calculated probability: 0.36917		
+                $1/e$: 0.36788**</span>
+
+**Conclusion:**
+     
+We have successfully derived and implemented a formula for the probability of exactly one cell remaining empty when n balls are placed randomly into n cells. This problem is related to the concept of 'occupancy problems' in probability theory and has applications in various fields, including computer science (e.g., hash table collisions) and biology (e.g., certain population models).
+
+
+```{=html}
+<div style="background-color:grey;height:2px;width:100%;"></div>
+```
+
+
+
+```{=html}
+<div><pre><small><small>source: <a href="https://github.com/adabwana/f24-m6410-hw3/blob/master/src/assignments/hw3/q3.clj">src/assignments/hw3/q3.clj</a></small></small></pre></div>
+```

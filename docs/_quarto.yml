@@ -1,0 +1,7 @@
+format:
+  html: {toc: true, toc-depth: 3, theme: cosmo, number-sections: false}
+  revealjs: {theme: cosmo, navigation-mode: vertical, transition: slide, background-transition: fade, incremental: true}
+project: {type: book}
+book:
+  chapters: [index.qmd, assignments.hw3.utils.qmd, assignments.hw3.q1.qmd, assignments.hw3.q2.qmd, assignments.hw3.q3.qmd, assignments.hw3.q4.qmd, assignments.hw3.q5.qmd, assignments.hw3.q6.qmd, assignments.hw3.q7.qmd, assignments.hw3.q8.qmd, assignments.hw3.q7_methods.qmd]
+  title: Homework 3
